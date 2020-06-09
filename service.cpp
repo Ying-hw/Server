@@ -10,11 +10,14 @@ Service::Service():m_Epollfd(INVALID), m_ActiveConnnectCount(INVALID)
         perror("epoll_create1");
         return;
     }
+    m_threadPool.setExpiryTimeout(INVALID);
+    m_threadPool.setMaxThreadCount(MAX_ACTIVE_COUNT);
     initService();
 }
 
 Service::~Service()
 {
+    m_threadPool.clear();
     close(m_Epollfd);
     for (int &connectFd:m_AllActiveSockfd) {
         close(connectFd);
@@ -34,7 +37,7 @@ void Service::initService()
     addr.sin_port = htons(7007);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     int nbind = bind(m_sockfd, (struct sockaddr*)&addr, sizeof(addr));
-    if(nbind == -1) {
+    if(nbind == INVALID) {
         perror("bind");
         return;
     }
@@ -60,14 +63,14 @@ void *Service::wait_epoll(void *arg)
 {
     Service* ser = (Service*)arg;
     while(1) {
-        int count = epoll_wait(ser->m_Epollfd, ser->m_ActiveErpoll, 100, -1);
+        int count = epoll_wait(ser->m_Epollfd, ser->m_ActiveErpoll, MAX_ACTIVE_COUNT, INVALID);
         if(count == INVALID) {
             perror("epoll_wait");
             return NULL;
         }
         else {
-            pthread_t tid;
-            pthread_create(&tid, NULL, ser->ReplyData, arg);
+            runInstance* run = new runInstance(ser);
+            ser->m_threadPool.start(run);
         }
     }
     return NULL;
@@ -94,22 +97,25 @@ void *Service::wait_client(void *arg)
     return NULL;
 }
 
-void *Service::ReplyData(void *arg)
+runInstance::runInstance(Service *target) : m_target(target)
+{
+    setAutoDelete(true);
+}
+
+void runInstance::run()
 {
     char buf[128] = {0};
-    Service* ser = (Service*)arg;
-    for (int i = 0;i < ser->m_ActiveConnnectCount;i++) {
-        int size = read(ser->m_ActiveErpoll[i].data.fd, buf, 128);
+    for (int i = 0;i < m_target->m_ActiveConnnectCount;i++) {
+        int size = read(m_target->m_ActiveErpoll[i].data.fd, buf, 128);
         if(size <= 0) {
-            epoll_ctl(ser->m_Epollfd, EPOLL_CTL_DEL, ser->m_ActiveErpoll[i].data.fd, NULL);
-            ser->m_AllActiveSockfd.removeOne(ser->m_ActiveErpoll[i].data.fd);
-            close(ser->m_ActiveErpoll[i].data.fd);
-            return NULL;
+            epoll_ctl(m_target->m_Epollfd, EPOLL_CTL_DEL, m_target->m_ActiveErpoll[i].data.fd, NULL);
+            m_target->m_AllActiveSockfd.removeOne(m_target->m_ActiveErpoll[i].data.fd);
+            close(m_target->m_ActiveErpoll[i].data.fd);
+            return;
         }
-        for (int &connectFd: ser->m_AllActiveSockfd) {
+        for (int &connectFd: m_target->m_AllActiveSockfd) {
             write(1, buf, size);
             write(connectFd, buf, size);
         }
     }
-    return NULL;
 }

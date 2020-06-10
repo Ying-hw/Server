@@ -10,6 +10,7 @@
 #include <QList>
 #include <arpa/inet.h>
 #include <QThreadPool>
+#include <QDebug>
 
 #define MAX_ACTIVE_COUNT 100 ///< 同时活跃的最大总数量
 /// \brief 线程运行函数声明

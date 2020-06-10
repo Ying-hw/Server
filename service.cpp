@@ -63,12 +63,13 @@ void *Service::wait_epoll(void *arg)
 {
     Service* ser = (Service*)arg;
     while(1) {
-        int count = epoll_wait(ser->m_Epollfd, ser->m_ActiveErpoll, MAX_ACTIVE_COUNT, INVALID);
-        if(count == INVALID) {
+        ser->m_ActiveConnnectCount = epoll_wait(ser->m_Epollfd, ser->m_ActiveErpoll, MAX_ACTIVE_COUNT, INVALID);
+        if(ser->m_ActiveConnnectCount == INVALID) {
             perror("epoll_wait");
             return NULL;
         }
         else {
+            qDebug("开始运行线程");
             runInstance* run = new runInstance(ser);
             ser->m_threadPool.start(run);
         }
@@ -105,12 +106,14 @@ runInstance::runInstance(Service *target) : m_target(target)
 void runInstance::run()
 {
     char buf[128] = {0};
+    qDebug() << "size:" << m_target->m_ActiveConnnectCount;
     for (int i = 0;i < m_target->m_ActiveConnnectCount;i++) {
         int size = read(m_target->m_ActiveErpoll[i].data.fd, buf, 128);
         if(size <= 0) {
             epoll_ctl(m_target->m_Epollfd, EPOLL_CTL_DEL, m_target->m_ActiveErpoll[i].data.fd, NULL);
             m_target->m_AllActiveSockfd.removeOne(m_target->m_ActiveErpoll[i].data.fd);
             close(m_target->m_ActiveErpoll[i].data.fd);
+            qDebug("已经退出");
             return;
         }
         for (int &connectFd: m_target->m_AllActiveSockfd) {

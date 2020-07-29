@@ -1,0 +1,88 @@
+syntax = "proto3";
+option optimize_for = SPEED;
+message ChatRecord
+{
+	uint64 time = 1;
+	enum contenttype
+	{
+		file   = 0;
+		image  = 1;
+		text   = 2;
+		video  = 3;
+		folder = 4;
+	}
+	contenttype type   			= 2;
+	bytes 		content      	= 3;
+	bool 		isSelf        	= 4; 
+	bytes 		targetNumber 	= 5;
+	bytes 		selfNumber   	= 6;
+	HeadInfor 	head     		= 7;
+	message 	HeadInfor 
+	{
+		uint64 size    = 1;
+	    bytes  name     = 2;
+	}
+}
+
+message AddInformation
+{
+	enum TargetType
+	{
+		isFriend = 0;
+		isGroup  = 1;
+	}
+	TargetType  type          = 1;
+	bytes       TargetAccount = 2;
+	bytes       FromAccount   = 3;
+	bytes       reason        = 4;
+}
+
+message User
+{
+	message loginUser
+	{
+		bytes userNumder  = 1;
+		bool  isCurrent   = 2;
+	}
+	repeated loginUser login = 3;
+}
+
+message ChatRecord_Group
+{
+	uint64 currtime = 1;
+	bytes  account   = 2;
+	enum contenttype
+	{
+		file  = 0;
+		image = 1;
+		text  = 2;
+	}
+	contenttype type       = 3;
+	bytes 		content    = 4;
+	bytes 		selfNumber = 5;
+}
+
+
+message protocol
+{
+	enum MsgType
+	{
+		tcp  = 0;
+		udp  = 1;
+		http = 2;
+		smtp = 3;
+		ftp  = 4;
+		online = 5;
+	}
+	enum Chat_OneorMultiple
+	{
+		one      = 0;
+		multiple = 1;
+	}
+	MsgType                   type         = 1;
+	bytes                     MySelfNum    = 2;
+	Chat_OneorMultiple        count        = 3;
+	repeated ChatRecord       chatContent  = 4;
+	repeated ChatRecord_Group group        = 5;
+	AddInformation            addInfor     = 6;
+}

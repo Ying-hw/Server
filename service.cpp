@@ -1,6 +1,8 @@
 #include "service.h"
+#include "NetProtocConfig.pb.h"
 
 #define INVALID -1
+using namespace protobuf_NetProtocConfig_2eproto;
 
 Service::Service():m_Epollfd(INVALID), m_ActiveConnnectCount(INVALID)
   , m_sockfd(INVALID)
@@ -59,6 +61,32 @@ void Service::AddEpoll(int connectFd)
     }
 }
 
+void Service::AnalysisProtocol(char *content, int fd)
+{
+    protocol proto;
+    if(proto.ParseFromArray(content, strlen(content))) {
+        switch(proto.type()) {
+        case protocol_MsgType_online:
+            m_mapUserNUm_Fd[proto.myselfnum()] = fd;
+            break;
+        case protocol_MsgType_tcp:
+            if(proto.has_addinfor()) {
+                AddInformation infor = proto.addinfor();
+                if(m_mapUserNUm_Fd.contains(infor.targetaccount()))
+                       write(m_mapUserNUm_Fd[infor.targetaccount()], content, strlen(content));
+            }
+            if(proto.count() == protocol_Chat_OneorMultiple::protocol_Chat_OneorMultiple_one) {
+                 ChatRecord record = proto.chatcontent(0);
+                 if(m_mapUserNUm_Fd.contains(record.targetnumber()))
+                       write(m_mapUserNUm_Fd[record.targetnumber()], content, strlen(content));
+            }
+
+        default:
+            break;
+        }
+    }
+}
+
 void *Service::wait_epoll(void *arg)
 {
     Service* ser = (Service*)arg;
@@ -113,12 +141,17 @@ void runInstance::run()
             epoll_ctl(m_target->m_Epollfd, EPOLL_CTL_DEL, m_target->m_ActiveErpoll[i].data.fd, NULL);
             m_target->m_AllActiveSockfd.removeOne(m_target->m_ActiveErpoll[i].data.fd);
             close(m_target->m_ActiveErpoll[i].data.fd);
+            m_target->m_mapUserNUm_Fd.erase(std::remove_if(m_target->m_mapUserNUm_Fd.begin(), m_target->m_mapUserNUm_Fd.end(),
+                           [this,i](int Fd){
+                           return Fd == m_target->m_ActiveErpoll[i].data.fd;
+            }));
             qDebug("已经退出");
             return;
         }
-        for (int &connectFd: m_target->m_AllActiveSockfd) {
+        m_target->AnalysisProtocol(buf, m_target->m_ActiveErpoll[i].data.fd);
+       /* for (int &connectFd: m_target->m_AllActiveSockfd) {
             write(1, buf, size);
             write(connectFd, buf, size);
-        }
+        }*/
     }
 }

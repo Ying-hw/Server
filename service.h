@@ -1,5 +1,6 @@
 #ifndef SERVICE_H
 #define SERVICE_H
+
 #include <pthread.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -33,6 +34,11 @@ public:
     /// \param[in] epollfd 客户端已经上线的描述符
     void AddEpoll(int epollfd);
 
+    /// \brief 解析协议
+    /// \param[in] content 协议内容
+    /// \param[in] fd 文件描述符
+    void AnalysisProtocol(char* content, int fd);
+
     /// \brief 阻塞等待epoll输入事件
     /// \param[in] arg 线程函数参数
     /// \retval 返回线程函数的返回值
@@ -50,6 +56,7 @@ private:
     QList<int> m_AllActiveSockfd;   ///< 所有已经上线的客户端套接字
     int m_sockfd; ///< 套接字
     QThreadPool m_threadPool;  ///< 线程池类
+    QMap<std::string, int> m_mapUserNUm_Fd; ///< 用户号码和套接字描述符
     friend class runInstance;  ///< 线程运行函数，可访问私有成员
 };
 

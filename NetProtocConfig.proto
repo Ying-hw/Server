@@ -1,5 +1,6 @@
 syntax = "proto3";
 option optimize_for = SPEED;
+
 message ChatRecord
 {
 	uint64 time = 1;
@@ -10,6 +11,7 @@ message ChatRecord
 		text   = 2;
 		video  = 3;
 		folder = 4;
+		audio  = 5;
 	}
 	contenttype type   			= 2;
 	bytes 		content      	= 3;
@@ -19,8 +21,9 @@ message ChatRecord
 	HeadInfor 	head     		= 7;
 	message 	HeadInfor 
 	{
-		uint64 size    = 1;
-	    bytes  name     = 2;
+		uint64 FileSize    = 1;
+	    bytes  name        = 2;
+		bool   isConsent   = 3;
 	}
 }
 
@@ -50,29 +53,50 @@ message User
 message ChatRecord_Group
 {
 	uint64 currtime = 1;
-	bytes  account   = 2;
+	bytes  account  = 2;
 	enum contenttype
 	{
 		file  = 0;
 		image = 1;
 		text  = 2;
+		folder= 3;
+		audio = 4;
 	}
 	contenttype type       = 3;
 	bytes 		content    = 4;
 	bytes 		selfNumber = 5;
+	HeadInfor 	head       = 6;
+	message 	HeadInfor 
+	{
+		uint64 FileSize    = 1;
+	    bytes  name        = 2;
+		bool   isConsent   = 3;
+	}
 }
 
+message StateInformation
+{
+	enum StateMsg
+	{
+		Online    = 0;
+		offline   = 1;
+		hide      = 2;
+		dontexcuse= 3;
+	}
+	StateMsg     currState   = 1;
+	repeated bytes AllFriend = 2;
+}
 
 message protocol
 {
 	enum MsgType
 	{
-		tcp  = 0;
-		udp  = 1;
-		http = 2;
-		smtp = 3;
-		ftp  = 4;
-		online = 5;
+		tcp    = 0;
+		udp    = 1;
+		http   = 2;
+		smtp   = 3;
+		ftp    = 4;
+		stateInfor  = 5;
 	}
 	enum Chat_OneorMultiple
 	{
@@ -85,4 +109,14 @@ message protocol
 	repeated ChatRecord       chatContent  = 4;
 	repeated ChatRecord_Group group        = 5;
 	AddInformation            addInfor     = 6;
+	StateInformation          state        = 7;
 }
+
+
+
+
+
+
+
+
+

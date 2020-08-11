@@ -66,7 +66,7 @@ void Service::AnalysisProtocol(char *content, int fd)
     protocol proto;
     if(proto.ParseFromArray(content, strlen(content))) {
         switch(proto.type()) {
-        case protocol_MsgType_online:
+        case protocol_MsgType_stateInfor:
             m_mapUserNUm_Fd[proto.myselfnum()] = fd;
             break;
         case protocol_MsgType_tcp:
@@ -119,6 +119,7 @@ void *Service::wait_client(void *arg)
             return NULL;
         }
         else {
+            qDebug() << "kehuduan";
             ser->m_AllActiveSockfd.append(connectFd);
             ser->AddEpoll(connectFd);
         }

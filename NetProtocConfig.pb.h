@@ -127,14 +127,14 @@ inline bool ChatRecord_contenttype_Parse(
     ChatRecord_contenttype_descriptor(), name, value);
 }
 enum AddInformation_TargetType {
-  AddInformation_TargetType_isFriend = 0,
-  AddInformation_TargetType_isGroup = 1,
+  AddInformation_TargetType_isGroup = 0,
+  AddInformation_TargetType_isFriend = 1,
   AddInformation_TargetType_AddInformation_TargetType_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
   AddInformation_TargetType_AddInformation_TargetType_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
 bool AddInformation_TargetType_IsValid(int value);
-const AddInformation_TargetType AddInformation_TargetType_TargetType_MIN = AddInformation_TargetType_isFriend;
-const AddInformation_TargetType AddInformation_TargetType_TargetType_MAX = AddInformation_TargetType_isGroup;
+const AddInformation_TargetType AddInformation_TargetType_TargetType_MIN = AddInformation_TargetType_isGroup;
+const AddInformation_TargetType AddInformation_TargetType_TargetType_MAX = AddInformation_TargetType_isFriend;
 const int AddInformation_TargetType_TargetType_ARRAYSIZE = AddInformation_TargetType_TargetType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* AddInformation_TargetType_descriptor();
@@ -648,10 +648,10 @@ class AddInformation : public ::google::protobuf::Message /* @@protoc_insertion_
   // nested types ----------------------------------------------------
 
   typedef AddInformation_TargetType TargetType;
-  static const TargetType isFriend =
-    AddInformation_TargetType_isFriend;
   static const TargetType isGroup =
     AddInformation_TargetType_isGroup;
+  static const TargetType isFriend =
+    AddInformation_TargetType_isFriend;
   static inline bool TargetType_IsValid(int value) {
     return AddInformation_TargetType_IsValid(value);
   }
@@ -723,6 +723,12 @@ class AddInformation : public ::google::protobuf::Message /* @@protoc_insertion_
   ::AddInformation_TargetType type() const;
   void set_type(::AddInformation_TargetType value);
 
+  // bool isConsent = 5;
+  void clear_isconsent();
+  static const int kIsConsentFieldNumber = 5;
+  bool isconsent() const;
+  void set_isconsent(bool value);
+
   // @@protoc_insertion_point(class_scope:AddInformation)
  private:
 
@@ -731,6 +737,7 @@ class AddInformation : public ::google::protobuf::Message /* @@protoc_insertion_
   ::google::protobuf::internal::ArenaStringPtr fromaccount_;
   ::google::protobuf::internal::ArenaStringPtr reason_;
   int type_;
+  bool isconsent_;
   mutable int _cached_size_;
   friend struct ::protobuf_NetProtocConfig_2eproto::TableStruct;
   friend void ::protobuf_NetProtocConfig_2eproto::InitDefaultsAddInformationImpl();
@@ -2173,6 +2180,20 @@ inline void AddInformation::set_allocated_reason(::std::string* reason) {
   }
   reason_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), reason);
   // @@protoc_insertion_point(field_set_allocated:AddInformation.reason)
+}
+
+// bool isConsent = 5;
+inline void AddInformation::clear_isconsent() {
+  isconsent_ = false;
+}
+inline bool AddInformation::isconsent() const {
+  // @@protoc_insertion_point(field_get:AddInformation.isConsent)
+  return isconsent_;
+}
+inline void AddInformation::set_isconsent(bool value) {
+  
+  isconsent_ = value;
+  // @@protoc_insertion_point(field_set:AddInformation.isConsent)
 }
 
 // -------------------------------------------------------------------

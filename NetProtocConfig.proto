@@ -31,13 +31,15 @@ message AddInformation
 {
 	enum TargetType
 	{
-		isFriend = 0;
-		isGroup  = 1;
+		
+		isGroup  = 0;		
+		isFriend = 1;
 	}
 	TargetType  type          = 1;
 	bytes       TargetAccount = 2;
 	bytes       FromAccount   = 3;
 	bytes       reason        = 4;
+	bool        isConsent     = 5;
 }
 
 message User

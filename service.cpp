@@ -1,8 +1,7 @@
 #include "service.h"
-#include "NetProtocConfig.pb.h"
 
 #define INVALID -1
-using namespace protobuf_NetProtocConfig_2eproto;
+#define READBUFSIZE  1024
 
 Service::Service():m_Epollfd(INVALID), m_ActiveConnnectCount(INVALID)
   , m_sockfd(INVALID)
@@ -59,31 +58,8 @@ void Service::AddEpoll(int connectFd)
         perror("epoll_ctl");
         return;
     }
-}
-
-void Service::AnalysisProtocol(char *content, int fd)
-{
-    protocol proto;
-    if(proto.ParseFromArray(content, strlen(content))) {
-        switch(proto.type()) {
-        case protocol_MsgType_stateInfor:
-            m_mapUserNUm_Fd[proto.myselfnum()] = fd;
-            break;
-        case protocol_MsgType_tcp:
-            if(proto.has_addinfor()) {
-                AddInformation infor = proto.addinfor();
-                if(m_mapUserNUm_Fd.contains(infor.targetaccount()))
-                       write(m_mapUserNUm_Fd[infor.targetaccount()], content, strlen(content));
-            }
-            if(proto.count() == protocol_Chat_OneorMultiple::protocol_Chat_OneorMultiple_one) {
-                 ChatRecord record = proto.chatcontent(0);
-                 if(m_mapUserNUm_Fd.contains(record.targetnumber()))
-                       write(m_mapUserNUm_Fd[record.targetnumber()], content, strlen(content));
-            }
-
-        default:
-            break;
-        }
+    else {
+        qDebug() << "tianjia epoll";
     }
 }
 
@@ -127,6 +103,7 @@ void *Service::wait_client(void *arg)
     return NULL;
 }
 
+QMap<std::string, int> runInstance::m_mapUserNUm_Fd;
 runInstance::runInstance(Service *target) : m_target(target)
 {
     setAutoDelete(true);
@@ -134,25 +111,70 @@ runInstance::runInstance(Service *target) : m_target(target)
 
 void runInstance::run()
 {
-    char buf[128] = {0};
+    char buf[READBUFSIZE] = {0};
     qDebug() << "size:" << m_target->m_ActiveConnnectCount;
     for (int i = 0;i < m_target->m_ActiveConnnectCount;i++) {
-        int size = read(m_target->m_ActiveErpoll[i].data.fd, buf, 128);
+        int size = read(m_target->m_ActiveErpoll[i].data.fd, buf, READBUFSIZE);
         if(size <= 0) {
             epoll_ctl(m_target->m_Epollfd, EPOLL_CTL_DEL, m_target->m_ActiveErpoll[i].data.fd, NULL);
             m_target->m_AllActiveSockfd.removeOne(m_target->m_ActiveErpoll[i].data.fd);
             close(m_target->m_ActiveErpoll[i].data.fd);
-            m_target->m_mapUserNUm_Fd.erase(std::remove_if(m_target->m_mapUserNUm_Fd.begin(), m_target->m_mapUserNUm_Fd.end(),
+            m_mapUserNUm_Fd.erase(std::remove_if(m_mapUserNUm_Fd.begin(), m_mapUserNUm_Fd.end(),
                            [this,i](int Fd){
                            return Fd == m_target->m_ActiveErpoll[i].data.fd;
             }));
             qDebug("已经退出");
             return;
         }
-        m_target->AnalysisProtocol(buf, m_target->m_ActiveErpoll[i].data.fd);
-       /* for (int &connectFd: m_target->m_AllActiveSockfd) {
-            write(1, buf, size);
-            write(connectFd, buf, size);
-        }*/
+       AnalysisProtocol(buf, m_target->m_ActiveErpoll[i].data.fd);
+    }
+}
+
+void runInstance::AnalysisProtocol(const char *content, int fd)
+{
+   QString strProtocolUtf8 = QString::fromUtf8(content, strlen(content) + 1);
+   QString strProtocolstd = QString::fromStdString(content);
+    qDebug("666666");
+    protocol proto;
+    if(proto.ParseFromString(strProtocolUtf8.toStdString()) || proto.ParseFromString(strProtocolstd.toStdString())) {
+        qDebug() << "process";
+        switch(proto.type()) {
+        case protocol_MsgType_stateInfor:
+            switch (proto.state().currstate()) {
+            qDebug()<<"state";
+            case StateInformation_StateMsg_Online:
+                m_mapUserNUm_Fd[proto.myselfnum()] = fd;
+                qDebug() << "4234";
+                break;
+            case StateInformation_StateMsg_hide:
+                m_mapUserNUm_Fd.remove(proto.myselfnum());
+                break;
+            default:
+                break;
+            }
+            break;
+        case protocol_MsgType_tcp:
+            if(proto.has_addinfor()) {
+                qDebug() << proto.DebugString().c_str();
+                AddInformation* infor = proto.mutable_addinfor();
+                if(m_mapUserNUm_Fd.contains(infor->targetaccount())) {
+                       qDebug() << write(m_mapUserNUm_Fd[infor->targetaccount()], content, strlen(content));
+                       qDebug() << "send";
+                }
+                break;
+            }
+            if(proto.count() == protocol_Chat_OneorMultiple::protocol_Chat_OneorMultiple_one) {
+                 ChatRecord record = proto.chatcontent(0);
+                 if(m_mapUserNUm_Fd.contains(record.targetnumber()))
+                       write(m_mapUserNUm_Fd[record.targetnumber()], content, strlen(content));
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    else {
+       qDebug() << "shibsai";
+
     }
 }
